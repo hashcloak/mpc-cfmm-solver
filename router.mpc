@@ -1,0 +1,28 @@
+
+class ArbitrageRouter:
+
+    """
+    cfmms: List[CFMM]
+    n_tokens: sint
+    tendered_assets: List[List[sfix]]
+    received_assets: List[List[sfix]]
+    price_vector: List[sfix]
+    """
+    def __init__(self, cfmms, n_tokens):
+        self.cfmms = cfmms
+        self.big_delta = sfix.MultiArray([len(cfmms), 2])
+        self.big_lambda = sfix.MultiArray([len(cfmms), 2])
+
+        @for_range(len(cfmms))
+        def _(i):
+            self.big_delta.assign_all(sfix(0))
+            self.big_delta.assign_all(sfix(0))
+
+        self.v = sfix.Array(n_tokens)
+        self.v.assign_all(sfix(0))
+
+    def find_arb(self, price_vector):
+        pass
+
+    def route(self, price_vector=None, m=cint(5)):
+        pass
