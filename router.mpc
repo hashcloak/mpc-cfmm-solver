@@ -1,3 +1,4 @@
+exec(open("../cfmms.mpc").read())
 
 class ArbitrageRouter:
 
@@ -25,4 +26,7 @@ class ArbitrageRouter:
         pass
 
     def route(self, price_vector=None, m=cint(5)):
+        pass
+
+    def netflows(self):
         pass

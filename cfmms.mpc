@@ -45,6 +45,9 @@ class CFMM:
     def arb_lambda(self, price_vector, reserves, invariant, fee):
         pass
 
+    def zerotrade(self):
+        pass
+
 class ProductTwoCoinCFMM(CFMM):
     pass
 
