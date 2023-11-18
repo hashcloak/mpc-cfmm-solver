@@ -1,0 +1,52 @@
+"""
+[1]: https://angeris.github.io/papers/cfmm-routing.pdf
+"""
+
+class CFMM:
+    """
+    reserves: list[sfix]
+    gamma: sfix
+    Ai: list[int]
+    """
+    def __init__(self, reserves, fee, Ai):
+        self.R = reserves
+        self.gamma = fee
+        self.Ai = Ai
+
+    def phi(self):  
+        pass
+
+    def gradient_phi(self):
+        pass
+
+    """
+    tendered_baskets: Assets to give to CFMM. Delta in [1]
+    received_baskets: Assets to receive from CFMM. Lambda in [1]
+    """
+    def find_arb(self, tendered_baskets, received_baskets, price_vector):
+        pass
+        
+
+    """
+    price_vector: list[sfix]
+    reservers: list[sfix]
+    invariant: sfix
+    fee: sfix
+    """
+    def arb_delta(self, price_vector, reserves, invariant, fee):
+        pass
+
+    """
+    price_vector: list[sfix]
+    reservers: list[sfix]
+    invariant: sfix
+    fee: sfix
+    """
+    def arb_lambda(self, price_vector, reserves, invariant, fee):
+        pass
+
+class ProductTwoCoinCFMM(CFMM):
+    pass
+
+class GeometricMeanTwoCoinCFMM(CFMM):
+    pass
