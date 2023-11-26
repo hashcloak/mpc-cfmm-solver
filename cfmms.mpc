@@ -46,7 +46,9 @@ class CFMM:
         pass
 
     def zerotrade(self):
-        pass
+        zerotrade_list = sfix.Array(length=len(self.R))
+        zerotrade_list.assign_all(sfix(0))
+        return zerotrade_list
 
 class ProductTwoCoinCFMM(CFMM):
     pass
