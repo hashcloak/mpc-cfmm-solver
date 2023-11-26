@@ -57,7 +57,15 @@ class ProductTwoCoinCFMM(CFMM):
         super().__init__(reserves, fee, Ai)
 
     def phi(self):
-        return self.R[1] * self.R[2]
+        return self.R[0] * self.R[1]
+
+    def gradient_phi(self):
+        R_prime = sfix.Array(len(self.R))
+        R_prime[0] = self.R[1]
+        R_prime[1] = self.R[0]
+        return R_prime
+
+        
 
 class GeometricMeanTwoCoinCFMM(CFMM):
     pass
