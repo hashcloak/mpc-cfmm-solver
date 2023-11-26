@@ -52,7 +52,7 @@ class CFMM:
 
 class ProductTwoCoinCFMM(CFMM):
     def __init__(self, reserves, fee, Ai):
-        assert len(reservers) == 2
+        assert len(reserves) == 2
         assert len(Ai) == 2
         super().__init__(reserves, fee, Ai)
 
@@ -64,6 +64,21 @@ class ProductTwoCoinCFMM(CFMM):
         R_prime[0] = self.R[1]
         R_prime[1] = self.R[0]
         return R_prime
+
+    def find_arb(self, tendered_baskets, received_baskets, price_vector):
+        assert len(price_vector) > 0
+        is_gamma_nonneg = (self.gamma > 0).if_else(True, False)
+        assert is_gamma_nonneg
+
+        k = self.phi()
+
+        tendered_baskets[0] = self.arb_delta(price_vector[1]/price_vector[0], self.R[0], k, self.gamma)
+        tendered_baskets[1] = self.arb_delta(price_vector[0]/price_vector[1], self.R[1], k, self.gamma)
+
+        received_baskets[0] = self.arb_lambda(price_vector[0]/price_vector[1], self.R[0], k, self.gamma)
+        received_baskets[1] = self.arb_lambda(price_vector[1]/price_vector[0], self.R[1], k, self.gamma)
+
+        return (tendered_baskets, received_baskets)
 
         
 
