@@ -51,7 +51,13 @@ class CFMM:
         return zerotrade_list
 
 class ProductTwoCoinCFMM(CFMM):
-    pass
+    def __init__(self, reserves, fee, Ai):
+        assert len(reservers) == 2
+        assert len(Ai) == 2
+        super().__init__(reserves, fee, Ai)
+
+    def phi(self):
+        return self.R[1] * self.R[2]
 
 class GeometricMeanTwoCoinCFMM(CFMM):
     pass
