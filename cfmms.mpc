@@ -2,6 +2,8 @@
 [1]: https://angeris.github.io/papers/cfmm-routing.pdf
 """
 
+from Compiler import mpc_math
+
 class CFMM:
     """
     reserves: list[sfix]
@@ -33,7 +35,7 @@ class CFMM:
     invariant: sfix
     fee: sfix
     """
-    def arb_delta(self, price_vector, reserves, invariant, fee):
+    def arb_delta(self, market_reference_price, reserve, invariant, fee):
         pass
 
     """
@@ -42,7 +44,7 @@ class CFMM:
     invariant: sfix
     fee: sfix
     """
-    def arb_lambda(self, price_vector, reserves, invariant, fee):
+    def arb_lambda(self, market_reference_price, reserve, invariant, fee):
         pass
 
     def zerotrade(self):
@@ -79,6 +81,9 @@ class ProductTwoCoinCFMM(CFMM):
         received_baskets[1] = self.arb_lambda(price_vector[1]/price_vector[0], self.R[1], k, self.gamma)
 
         return (tendered_baskets, received_baskets)
+
+    def arb_delta(self, market_reference_price, reserve, invariant, fee):
+        return ((mpc_math.sqrt(fee*invariant*market_reference_price) - reserve).max(0))/fee
 
         
 
