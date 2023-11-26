@@ -85,6 +85,9 @@ class ProductTwoCoinCFMM(CFMM):
     def arb_delta(self, market_reference_price, reserve, invariant, fee):
         return ((mpc_math.sqrt(fee*invariant*market_reference_price) - reserve).max(0))/fee
 
+    def arb_lambda(self, market_reference_price, reserve, invariant, fee):
+        return ((reserve - mpc_math.sqrt(invariant/(fee*market_reference_price))).max(0))
+
         
 
 class GeometricMeanTwoCoinCFMM(CFMM):
