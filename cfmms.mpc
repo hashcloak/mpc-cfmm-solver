@@ -118,8 +118,8 @@ class GeometricMeanTwoCoinCFMM(CFMM):
     def geom_arb_delta(self, market_reference_price, reserve1, reserve2, invariant, fee):
         return mpc_math.pow(fee*market_reference_price*invariant*reserve1*mpc_math.pow(reserve2, invariant), 1/(invariant+1)).max(0)/fee
 
-    def geom_arb_lambda(self):
-        pass
+    def geom_arb_lambda(self, market_reference_price, reserve1, reserve2, invariant, fee):
+        return (reserve1-(reserve2*mpc_math.pow(reserve1, 1/invariant))/mpc_math.pow(invariant*fee*market_reference_price, invariant/(1+invariant))).max(0)
 
     def find_arb(self):
         pass
