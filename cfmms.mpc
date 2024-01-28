@@ -115,8 +115,8 @@ class GeometricMeanTwoCoinCFMM(CFMM):
         R_prime[1] = self.weights[1] * (self.R[0]/self.R[1])**self.weights[0]
         return R_prime
 
-    def geom_arb_delta(self, market_reference_price, reserve, invariant, fee):
-        return ()
+    def geom_arb_delta(self, market_reference_price, reserve1, reserve2, invariant, fee):
+        return mpc_math.pow(fee*market_reference_price*invariant*reserve1*mpc_math.pow(reserve2, invariant), 1/(invariant+1)).max(0)/fee
 
     def geom_arb_lambda(self):
         pass
