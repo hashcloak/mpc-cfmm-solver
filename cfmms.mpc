@@ -121,8 +121,18 @@ class GeometricMeanTwoCoinCFMM(CFMM):
     def geom_arb_lambda(self, market_reference_price, reserve1, reserve2, invariant, fee):
         return (reserve1-(reserve2*mpc_math.pow(reserve1, 1/invariant))/mpc_math.pow(invariant*fee*market_reference_price, invariant/(1+invariant))).max(0)
 
-    def find_arb(self):
-        pass
+    def find_arb(self, tendered_baskets, received_baskets, price_vector):
+        R = self.reserves
+        fee = self.fee
+        eta = self.weights[1]/self.weights[0]
+
+        tendered_baskets[0] = geom_arb_delta(price_vector[1]/price_vector[0], R[1], R[0], eta, fee)
+        tendered_baskets[1] = geom_arb_delta(price_vector[0]/price_vector[1], R[0], R[1], 1/eta, fee)
+
+        received_baskets[0] = geom_arb_lambda(price_vector[0]/price_vector[1], R[0], R[1], 1/eta, fee)
+        received_baskets[1] = geom_arb_lambda(price_vector[1]/price_vector[0], R[1], R[0], eta, fee)
+
+        return (tendered_baskets, received_baskets)
 
 #if __name__ == '__main__':
     # Testing Classes
