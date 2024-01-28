@@ -99,17 +99,52 @@ class ProductTwoCoinCFMM(CFMM):
         
 
 class GeometricMeanTwoCoinCFMM(CFMM):
-    pass
+    def __init__(self, reserves, Ai, fee, weights):
+        assert len(reserves) == 2
+        assert len(Ai) == 2
+        assert len(weights) == 2
+        self.weights = weights
+        super().__init__(reserves, fee, Ai)
+
+    def phi(self):
+        return (self.R[0]**self.weights[0]) * (self.R[1]**self.weights[1])
+
+    def gradient_phi(self):
+        R_prime = sfix.Array(len(self.R))
+        R_prime[0] = self.weights[0] * (self.R[1]/self.R[0])**self.weights[1]
+        R_prime[1] = self.weights[1] * (self.R[0]/self.R[1])**self.weights[0]
+        return R_prime
+
+    def geom_arb_delta(self, market_reference_price, reserve, invariant, fee):
+        return ()
+
+    def geom_arb_lambda(self):
+        pass
+
+    def find_arb(self):
+        pass
 
 #if __name__ == '__main__':
     # Testing Classes
 
-reserves_prod = sfix.Array(2)
-reserves_prod.assign([1, 1])
-fee = sfix(1)
 global_indices = regint.Array(2)
 global_indices.assign([0, 1])
-equal_pool = ProductTwoCoinCFMM(reserves_prod, fee, global_indices)
+
+reserves_prod1 = sfix.Array(2)
+reserves_prod1.assign([1000000, 1000000])
+fee = sfix(1)
+equal_pool = ProductTwoCoinCFMM(reserves_prod1, fee, global_indices)
+
+reserves_prod2 = sfix.Array(2)
+reserves_prod2.assign([1000, 2000])
+unequal_small_pool = ProductTwoCoinCFMM(reserves_prod2, fee, global_indices)
+
+reserves_prod3 = sfix.Array(2)
+reserves_prod3.assign([10000, 20000])
+weights = sfix.Array(2)
+weights.assign([0.4, 0.6])
+weighted_pool = GeometricMeanTwoCoinCFMM(reserves_prod3, weights, fee, global_indices)
+
 price_vector = sfix.Array(2)
 price_vector.assign([1, 1])
 tendered_assets_tmp = sfix.Array(2)
