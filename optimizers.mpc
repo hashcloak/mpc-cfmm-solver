@@ -1,0 +1,60 @@
+from Compiler import mpc_math
+
+sfix.round_nearest = True
+cfix.set_precision(f=8, k=34)
+sfix.set_precision(f=8, k=34)
+
+class Optimizer:
+
+    def __init__(self, fnct, dim):
+        self.function = fnct
+        self.dimension = dim
+
+    def optimize(self, learning_rate=None):
+        pass
+
+
+class SGDOptimizer(Optimizer):
+
+    def optimize(self, initial_guess, learning_rate=sfix(0.01), n_iter=10):
+        guess = sfix(initial_guess)
+        @for_range(n_iter)
+        def _(i):
+            guess.update(guess - learning_rate * self.function.grad(guess))
+
+        return guess
+
+
+class LinearNonnegative:
+    def __init__(self, constants):
+        tmp = []
+        @for_range(len(constants))
+        def _(i):
+            tmp.append((constants[i] > 0).if_else(True, False))
+
+        for i in tmp:
+            if i is False:
+                raise Exception
+        self.constants = constants
+
+    def grad(self, v):
+        tmp = []
+        @for_range(len(self.constants))
+        def _(i):
+            tmp.append((self.constants[i] < v).if_else(0, False))
+
+        for i in tmp:
+            if i is False:
+                raise Exception
+
+        return 0
+
+
+c = sfix.Array(2)
+c.assign(sfix(1))
+c.assign(sfix(2))
+
+ln = LinearNonnegative(c)
+sgd_opt = SGDOptimizer(ln, 2)
+print_ln("%s", sgd_opt.optimize(sfix(1.5)).reveal())
+

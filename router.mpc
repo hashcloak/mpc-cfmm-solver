@@ -23,9 +23,12 @@ class ArbitrageRouter:
         self.v.assign_all(sfix(0))
 
     def find_arb(self, price_vector):
-        pass
+        tendered_and_received_baskets = []
+        for i, cfmm in zip(list(len(cfmms)), self.cfmms):
+            tendered_and_received_baskets.append(cfmm.find_arb(self.big_delta[i], self.big_lambda[i], cfmm, price_vector[cfmm.Ai]))
 
-    def route(self, price_vector=None, m=cint(5)):
+
+    def route(self, price_vector=None):
         pass
 
     def netflows(self):
