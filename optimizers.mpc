@@ -24,6 +24,43 @@ class SGDOptimizer(Optimizer):
 
         return guess
 
+class L_BFGS_BOptimizer(Optimizer):
+
+    def optimize(self, initial_guess, memory_size=17, threshold=cfix(0.000001)):
+        k = regint(0)
+        size = self.dimension * memory_size
+        S = Matrix(self.dimension, memory_size, sfix)
+        Y = Matrix(self.dimension, memory_size, sfix)
+
+        guess_k = initial_guess
+
+        invH = Matrix(self.dimension, self.dimension, sfix)
+        p_vec_k = sfix.Array(self.dimension)
+
+        @while_do(lambda: self.function.norm(self.function.grad(guess_k)) >= threshold)
+        def f():
+            @if_e(k == 0)
+            def _():
+                @for_range(self.dimension)
+                def _(i):
+                    @for_range(self.dimension)
+                    def _(j):
+                        @if_e(i == j)
+                        def _():
+                            invH[i][i] = 1
+                        @else_
+                        def _():
+                            invH[i][j] = 0
+
+                grad_f_k = self.function.grad(guess_k)
+                p_vec_k.assign(invH.dot(grad_f_k))
+            
+            @else_
+            def _():
+                pass
+
+            k.update(k + 1)
+
 
 class LinearNonnegative:
     def __init__(self, constants):
@@ -47,6 +84,11 @@ class LinearNonnegative:
             if i is False:
                 raise Exception
 
+        zero_vec = sfix.Array(len(v))
+        zero_vec.assign_all(0)
+        return zero_vec
+
+    def norm(self, x):
         return 0
 
 
@@ -55,6 +97,8 @@ c.assign(sfix(1))
 c.assign(sfix(2))
 
 ln = LinearNonnegative(c)
-sgd_opt = SGDOptimizer(ln, 2)
-print_ln("%s", sgd_opt.optimize(sfix(1.5)).reveal())
+#sgd_opt = SGDOptimizer(ln, 2)
+#print_ln("%s", sgd_opt.optimize(sfix(1.5)).reveal())
 
+l_bfgs_b_opt = L_BFGS_BOptimizer(ln, 2)
+print_ln("%s", l_bfgs_b_opt.optimize(sfix(1.5)).reveal())
