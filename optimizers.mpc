@@ -83,10 +83,10 @@ class L_BFGS_BOptimizer(Optimizer):
             def f():
                 alpha.update(rho * alpha)
 
-            prev_guess_k = guess_k
+            prev_guess_k.assign(guess_k)
             tmp = Matrix(self.dimension, 1, sfix)
             tmp.assign_vector(alpha * p_vec_k)
-            guess_k = prev_guess_k - tmp
+            guess_k.assign(prev_guess_k - tmp)
             s_k = guess_k - prev_guess_k
 
             prev_grad_k = grad_f_k
