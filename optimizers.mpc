@@ -52,16 +52,17 @@ class L_BFGS_BOptimizer(Optimizer):
         guess_k = Matrix(len(initial_guess), 1, sfix)
         guess_k.assign(initial_guess)
         grad_f_k = self.function.grad(guess_k)
-        prev_guess_k = None
-        prev_grad_k = None
+        prev_guess_k = Matrix(len(initial_guess), 1, sfix)
+        prev_grad_k = Matrix(len(initial_guess), 1, sfix)
 
         invH = Matrix(self.dimension, self.dimension, sfix)
         p_vec_k = Matrix(self.dimension, 1, sfix)
 
         I = self._identity()
-        alpha = MemValue(sfix(0))
+        alpha = MemValue(alpha)
 
-        @while_do(lambda: self.function.norm(self.function.grad(guess_k)) >= threshold)
+        # Fine to reveal here since we aren't leaking guess_k
+        @while_do(lambda: self.function.norm(self.function.grad(guess_k)).reveal() >= threshold)
         def f():
             @if_(k == 0)
             def _():
@@ -80,20 +81,22 @@ class L_BFGS_BOptimizer(Optimizer):
                 p_vec_k.assign(invH.dot(grad_f_k))
 
             # Compute line search using backtracking
-            print(type(self.function.grad(guess_k).direct_trans_mul(p_vec_k)))
-            @while_do(lambda: self.function.at(guess_k + p_vec_k) >= self.function.at(p_vec_k) + self.function.grad(guess_k).direct_trans_mul(p_vec_k))
+            # It's okay to reveal here since we aren't revealing guess_k itself
+            @while_do(lambda: self.function.at(guess_k + p_vec_k).reveal() >= (self.function.at(p_vec_k) + self.function.grad(guess_k).direct_trans_mul(p_vec_k)).reveal())
             def f():
                 alpha.update(rho * alpha)
 
             prev_guess_k.assign(guess_k)
             tmp = Matrix(self.dimension, 1, sfix)
+            alpha = cfix(alpha, size=p_vec_k.size)
+
             tmp.assign_vector(alpha * p_vec_k)
             guess_k.assign(prev_guess_k - tmp)
-            s_k = guess_k - prev_guess_k
+            s_k.assign(guess_k - prev_guess_k)
 
-            prev_grad_k = grad_f_k
-            grad_f_k = self.function.grad(guess_k)
-            y_k = grad_f_k - prev_grad_k
+            prev_grad_k.assign(grad_f_k)
+            grad_f_k.assign(self.function.grad(guess_k))
+            y_k.assign(grad_f_k - prev_grad_k)
                 
             y_kT_s_k = y_k.direct_trans_mul(s_k)
             y_kT_s_k_inv = ml.mr(y_kT_s_k_inv, 10)
@@ -135,11 +138,11 @@ class LinearNonnegative:
 
     def at(self, x):
         # TODO Implement properly
-        return 0
+        return sfix(0)
 
     def norm(self, x):
         # TODO Implement properly
-        return 0
+        return sfix(0)
 
 
 c = sfix.Array(2)
