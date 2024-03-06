@@ -43,7 +43,7 @@ class SGDOptimizer(Optimizer):
 
 class L_BFGS_BOptimizer(Optimizer):
 
-    def optimize(self, initial_guess, memory_size=17, threshold=cfix(0.000001), alpha=cfix(1), rho=cfix(0.5), armijo_c=cfix(0.0001), n_iter=10):
+    def optimize(self, initial_guess, memory_size=17, threshold=cfix(0.000001), alpha=MemValue(cfix(1)), rho=cfix(0.5), armijo_c=cfix(0.0001), n_iter=10):
         k = regint(0)
         size = self.dimension * memory_size
         S = Matrix(self.dimension, memory_size, sfix)
@@ -59,7 +59,7 @@ class L_BFGS_BOptimizer(Optimizer):
         p_vec_k = Matrix(self.dimension, 1, sfix)
 
         I = self._identity()
-        alpha = MemValue(alpha)
+        #alpha = MemValue(alpha)
 
         # Fine to reveal here since we aren't leaking guess_k
         @while_do(lambda: self.function.norm(self.function.grad(guess_k)).reveal() >= threshold)
@@ -84,25 +84,30 @@ class L_BFGS_BOptimizer(Optimizer):
             # It's okay to reveal here since we aren't revealing guess_k itself
             @while_do(lambda: self.function.at(guess_k + p_vec_k).reveal() >= (self.function.at(p_vec_k) + self.function.grad(guess_k).direct_trans_mul(p_vec_k)).reveal())
             def f():
-                alpha.update(rho * alpha)
+                alpha.write(rho * alpha)
+
+            #@for_range(n_iter)
+            #def _(i):
+            #    if self.function.at(guess_k + p_vec_k).reveal() >= (self.function.at(p_vec_k) + self.function.grad(guess_k).direct_trans_mul(p_vec_k)).reveal():
+            #        alpha.write(rho * alpha)
 
             prev_guess_k.assign(guess_k)
             tmp = Matrix(self.dimension, 1, sfix)
-            alpha = cfix(alpha, size=p_vec_k.size)
+            alpha_vec = cfix(alpha, size=p_vec_k.sizes[0])
 
-            tmp.assign_vector(alpha * p_vec_k)
+            tmp.assign_vector(alpha_vec * p_vec_k[:])
             guess_k.assign(prev_guess_k - tmp)
-            s_k.assign(guess_k - prev_guess_k)
+            S[k].assign_vector(guess_k - prev_guess_k)
 
             prev_grad_k.assign(grad_f_k)
             grad_f_k.assign(self.function.grad(guess_k))
-            y_k.assign(grad_f_k - prev_grad_k)
+            Y[k].assign_vector(grad_f_k - prev_grad_k)
                 
-            y_kT_s_k = y_k.direct_trans_mul(s_k)
+            y_kT_s_k = Y[k].direct_trans_mul(S[k])
             y_kT_s_k_inv = ml.mr(y_kT_s_k_inv, 10)
-            s_k_y_kT = s_k.direct_mul_trans(y_k)
-            y_k_s_kT = y_k.direct_mul_trans(s_k)
-            s_k_s_kT = s_k.trans_mul()
+            s_k_y_kT = S[k].direct_mul_trans(Y[k])
+            y_k_s_kT = Y[k].direct_mul_trans(S[k])
+            s_k_s_kT = S[k].trans_mul()
 
 
             k.update(k + 1)
