@@ -48,6 +48,11 @@ class L_BFGS_BOptimizer(Optimizer):
         size = self.dimension * memory_size
         S = Matrix(self.dimension, memory_size, sfix)
         Y = Matrix(self.dimension, memory_size, sfix)
+        #S = []
+        #Y = []
+        #for i in range(self.dimension):
+        #    S.append(Matrix(self.dimension, 1, sfix))
+        #    Y.append(Matrix(self.dimension, 1, sfix))
 
         guess_k = Matrix(len(initial_guess), 1, sfix)
         guess_k.assign(initial_guess)
@@ -93,21 +98,24 @@ class L_BFGS_BOptimizer(Optimizer):
 
             prev_guess_k.assign(guess_k)
             tmp = Matrix(self.dimension, 1, sfix)
-            alpha_vec = cfix(alpha, size=p_vec_k.sizes[0])
+            #alpha_vec = cfix(alpha, size=p_vec_k.sizes[0])
 
-            tmp.assign_vector(alpha_vec * p_vec_k[:])
+            tmp.assign_vector(alpha * p_vec_k[:])
             guess_k.assign(prev_guess_k - tmp)
             S[k].assign_vector(guess_k - prev_guess_k)
+            S_k = Matrix(len(S[k]), 1, S[k].value_type, address=S[k].address)
 
             prev_grad_k.assign(grad_f_k)
             grad_f_k.assign(self.function.grad(guess_k))
             Y[k].assign_vector(grad_f_k - prev_grad_k)
+            Y_k = Matrix(len(Y[k]), 1, Y[k].value_type, address=Y[k].address)
+
                 
-            y_kT_s_k = Y[k].direct_trans_mul(S[k])
-            y_kT_s_k_inv = ml.mr(y_kT_s_k_inv, 10)
-            s_k_y_kT = S[k].direct_mul_trans(Y[k])
-            y_k_s_kT = Y[k].direct_mul_trans(S[k])
-            s_k_s_kT = S[k].trans_mul()
+            y_kT_s_k = Y_k.direct_trans_mul(S_k)
+            y_kT_s_k_inv = ml.mr(y_kT_s_k, 10)
+            s_k_y_kT = S_k.direct_mul_trans(Y[k])
+            y_k_s_kT = Y_k.direct_mul_trans(S_k)
+            s_k_s_kT = S_k.trans_mul()
 
 
             k.update(k + 1)
