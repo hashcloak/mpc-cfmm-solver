@@ -46,8 +46,8 @@ class L_BFGS_BOptimizer(Optimizer):
     def optimize(self, initial_guess, memory_size=17, threshold=cfix(0.000001), alpha=MemValue(cfix(1)), rho=cfix(0.5), armijo_c=cfix(0.0001), n_iter=10):
         k = regint(0)
         size = self.dimension * memory_size
-        S = Matrix(self.dimension, memory_size, sfix)
-        Y = Matrix(self.dimension, memory_size, sfix)
+        #S = Matrix(self.dimension, memory_size, sfix)
+        #Y = Matrix(self.dimension, memory_size, sfix)
         #S = []
         #Y = []
         #for i in range(self.dimension):
@@ -82,8 +82,8 @@ class L_BFGS_BOptimizer(Optimizer):
                         def _():
                             invH[i][j] = 0
 
-                grad_f_k = self.function.grad(guess_k)
-                p_vec_k.assign(invH.dot(grad_f_k))
+            grad_f_k = self.function.grad(guess_k)
+            p_vec_k.assign(invH.dot(grad_f_k))
 
             # Compute line search using backtracking
             # It's okay to reveal here since we aren't revealing guess_k itself
@@ -101,21 +101,36 @@ class L_BFGS_BOptimizer(Optimizer):
             #alpha_vec = cfix(alpha, size=p_vec_k.sizes[0])
 
             tmp.assign_vector(alpha * p_vec_k[:])
-            guess_k.assign(prev_guess_k - tmp)
-            S[k].assign_vector(guess_k - prev_guess_k)
-            S_k = Matrix(len(S[k]), 1, S[k].value_type, address=S[k].address)
+            guess_k.assign(prev_guess_k + tmp)
+            S_k = Matrix(self.dimension, 1, sfix)
+            S_k.assign(guess_k - prev_guess_k)
+            #S_k = Matrix(len(S[k]), 1, S[k].value_type, address=S[k].address)
 
             prev_grad_k.assign(grad_f_k)
             grad_f_k.assign(self.function.grad(guess_k))
-            Y[k].assign_vector(grad_f_k - prev_grad_k)
-            Y_k = Matrix(len(Y[k]), 1, Y[k].value_type, address=Y[k].address)
+            Y_k = Matrix(self.dimension, 1, sfix)
+            Y_k.assign(grad_f_k - prev_grad_k)
+            #Y_k = Matrix(len(Y[k]), 1, Y[k].value_type, address=Y[k].address)
 
-                
-            y_kT_s_k = Y_k.direct_trans_mul(S_k)
-            y_kT_s_k_inv = ml.mr(y_kT_s_k, 10)
-            s_k_y_kT = S_k.direct_mul_trans(Y[k])
-            y_k_s_kT = Y_k.direct_mul_trans(S_k)
-            s_k_s_kT = S_k.trans_mul()
+            y_kT_s_k = Matrix(Y_k.sizes[0], S_k.sizes[0], sfix)
+            y_kT_s_k.assign(Y_k.direct_trans_mul(S_k))
+            rho_k = ml.mr(y_kT_s_k, 10)
+
+            s_k_y_kT = Matrix(S_k.sizes[0], Y_k.sizes[0], sfix)
+            s_k_y_kT.assign(S_k.direct_mul_trans(Y_k))
+
+            y_k_s_kT = Matrix(Y_k.sizes[0], S_k.sizes[0], sfix)
+            y_k_s_kT.assign(Y_k.direct_mul_trans(S_k))
+            s_k_s_kT = Matrix(S_k.sizes[0], S_k.sizes[0], sfix)
+            s_k_s_kT.assign(S_k.direct_mul_trans(S_k))
+
+            rho_k_s_k_y_kT = Matrix(rho_k.sizes[0], s_k_y_kT.sizes[0], sfix)
+            rho_k_s_k_y_kT.assign(rho_k.direct_mul(s_k_y_kT))
+
+            first_operand = Matrix(rho_k_s_k_y_kT.sizes[0], rho_k_s_k_y_kT.sizes[1], sfix)
+            first_operand.assign(I - rho_k_s_k_y_kT)
+
+            invH.assign((I - rho_k_s_k_y_kT).direct_mul(invH).direct_mul((I - rho_k.direct_mul(y_k_s_kT)) + rho_k.direct_mul(s_k_s_kT)))
 
 
             k.update(k + 1)
