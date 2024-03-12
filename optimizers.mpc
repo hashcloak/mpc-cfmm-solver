@@ -87,7 +87,11 @@ class L_BFGS_BOptimizer(Optimizer):
 
             # Compute line search using backtracking
             # It's okay to reveal here since we aren't revealing guess_k itself
-            @while_do(lambda: self.function.at(guess_k + p_vec_k).reveal() >= (self.function.at(p_vec_k) + self.function.grad(guess_k).direct_trans_mul(p_vec_k)).reveal())
+            point_ap = Matrix(self.dimension, 1, sfix)
+            point_ap.assign_vector((alpha * p_vec_k[:]))
+            point_ap.iadd(guess_k)
+
+            @while_do(lambda: self.function.at(point_ap).reveal() >= (self.function.at(p_vec_k) + self.function.grad(guess_k).direct_trans_mul(p_vec_k)).reveal())
             def f():
                 alpha.write(rho * alpha)
 
@@ -130,7 +134,17 @@ class L_BFGS_BOptimizer(Optimizer):
             first_operand = Matrix(rho_k_s_k_y_kT.sizes[0], rho_k_s_k_y_kT.sizes[1], sfix)
             first_operand.assign(I - rho_k_s_k_y_kT)
 
-            invH.assign((I - rho_k_s_k_y_kT).direct_mul(invH).direct_mul((I - rho_k.direct_mul(y_k_s_kT)) + rho_k.direct_mul(s_k_s_kT)))
+            res1 = Matrix(invH.sizes[0], invH.sizes[1], sfix)
+            res1.assign(first_operand.direct_mul(invH))
+
+            second_operand = Matrix(self.dimension, self.dimension, sfix)
+            second_operand.assign(rho_k.direct_mul(y_k_s_kT))
+
+            third_operand = Matrix(self.dimension, self.dimension, sfix)
+            third_operand.assign(rho_k.direct_mul(s_k_s_kT))
+            
+
+            invH.assign(res1.direct_mul((I - second_operand) + third_operand))
 
 
             k.update(k + 1)
