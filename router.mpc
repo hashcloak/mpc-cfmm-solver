@@ -62,4 +62,7 @@ class ArbitrageRouter:
 
 
     def netflows(self):
-        pass
+        psi = Matrix(len(self.price_vector), 1, sfix)
+        for (big_delta, big_lambda, cfmm) in zip(self.big_delta, self.big_lambda, self.cfmms):
+            psi[cfmm.Ai].iadd(big_lambda - big_delta)
+        return psi
