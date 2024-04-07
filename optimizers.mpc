@@ -164,15 +164,27 @@ class LinearNonnegative:
                 raise Exception
         self.constants = constants
 
+    def conjugate(self, v):
+        tmp = []
+        @for_range(len(self.constants))
+        def _(i):
+            tmp.append((self.constants[i][0] <= v[i][0]).if_else(0, False))
+
+        if !all(tmp):
+            raise Exception
+
+        zero_vec = Matrix(len(v), 1, sfix)
+        zero_vec.assign_all(0)
+        return zero_vec
+
     def grad(self, v):
         tmp = []
         @for_range(len(self.constants))
         def _(i):
             tmp.append((self.constants[i][0] <= v[i][0]).if_else(0, False))
 
-        for i in tmp:
-            if i is False:
-                raise Exception
+        if !all(tmp):
+            raise Exception
 
         zero_vec = Matrix(len(v), 1, sfix)
         zero_vec.assign_all(0)
