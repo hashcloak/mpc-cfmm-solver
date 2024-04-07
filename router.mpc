@@ -10,10 +10,11 @@ class ArbitrageRouter:
     received_assets: List[List[sfix]]
     price_vector: List[sfix]
     """
-    def __init__(self, cfmms, n_tokens):
+    def __init__(self, cfmms, n_tokens, ln_objective):
         self.cfmms = cfmms
         self.big_delta = sfix.MultiArray([len(cfmms), 2])
         self.big_lambda = sfix.MultiArray([len(cfmms), 2])
+        self.linearnn_objective = ln_objective
 
         @for_range(len(cfmms))
         def _(i):
@@ -27,8 +28,6 @@ class ArbitrageRouter:
         for i, cfmm in zip(list(len(cfmms)), self.cfmms):
             cfmm.find_arb(self.big_delta[i], self.big_lambda[i], cfmm, price_vector[cfmm.Ai])
             
-        
-
 
     def route(self, optimizer, price_vector=None):
         if price_vector is None:
@@ -44,6 +43,14 @@ class ArbitrageRouter:
 
             if !all(tmp):
                 self.find_arb(v)
+                self.price_vector.assign(v)
+
+            accumulator = sfix(0)
+
+            for (big_delta, big_lambda, cfmm) in zip(self.big_delta, self.big_lambda, self.cfmms):
+                accumulator += (big_lambda.dot(v[cfmm.Ai]) - big_delta.dot(v[cfmm.Ai]))
+
+            return self.linearnn_objective.conjugate(v) + accumulator
 
 
 
