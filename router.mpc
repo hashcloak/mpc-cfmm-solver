@@ -52,6 +52,13 @@ class ArbitrageRouter:
 
             return self.linearnn_objective.conjugate(v) + accumulator
 
+        def g(v):
+            pass
+
+        self.find_arb(self.price_vector)
+        new_price_vector = optimizer.optimize(self.price_vector)
+        self.price_vector.assign(new_price_vector)
+        self.find_arb(self.price_vector)
 
 
     def netflows(self):
