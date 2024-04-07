@@ -1,4 +1,5 @@
 exec(open("../cfmms.mpc").read())
+exec(open("../Optimizers.mpc").read())
 
 class ArbitrageRouter:
 
@@ -17,19 +18,34 @@ class ArbitrageRouter:
         @for_range(len(cfmms))
         def _(i):
             self.big_delta.assign_all(sfix(0))
-            self.big_delta.assign_all(sfix(0))
+            self.big_lambda.assign_all(sfix(0))
 
         self.v = sfix.Array(n_tokens)
         self.v.assign_all(sfix(0))
 
     def find_arb(self, price_vector):
-        tendered_and_received_baskets = []
         for i, cfmm in zip(list(len(cfmms)), self.cfmms):
-            tendered_and_received_baskets.append(cfmm.find_arb(self.big_delta[i], self.big_lambda[i], cfmm, price_vector[cfmm.Ai]))
+            cfmm.find_arb(self.big_delta[i], self.big_lambda[i], cfmm, price_vector[cfmm.Ai])
+            
+        
 
 
-    def route(self, price_vector=None):
-        pass
+    def route(self, optimizer, price_vector=None):
+        if price_vector is None:
+            self.v.assign_all(sfix(1)) # OG code says to use initial marginal price here
+        else:
+            self.v.assign(price_vector)
+
+        def fn(v):
+            tmp = []
+            @for_range(len(self.constants))
+            def _(i):
+                tmp.append((self.constants[i][0] <= v[i][0]).if_else(0, False))
+
+            if !all(tmp):
+                self.find_arb(v)
+
+
 
     def netflows(self):
         pass

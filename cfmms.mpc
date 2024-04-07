@@ -74,11 +74,11 @@ class ProductTwoCoinCFMM(CFMM):
         runtime_error_if(is_gamma_nonneg.reveal() == 0, "Gamma should be nonnegative")
 
         k = (self.gamma > 0).if_else(self.phi(), False)
-        tendered_baskets[0] = (self.gamma > 0).if_else(self.arb_delta(price_vector[1]/price_vector[0], self.R[0], k, self.gamma), False)
-        tendered_baskets[1] = (self.gamma > 0).if_else(self.arb_delta(price_vector[0]/price_vector[1], self.R[1], k, self.gamma), False)
+        tendered_baskets[0].assign((self.gamma > 0).if_else(self.arb_delta(price_vector[1]/price_vector[0], self.R[0], k, self.gamma), False))
+        tendered_baskets[1].assign((self.gamma > 0).if_else(self.arb_delta(price_vector[0]/price_vector[1], self.R[1], k, self.gamma), False))
 
-        received_baskets[0] = (self.gamma > 0).if_else(self.arb_lambda(price_vector[0]/price_vector[1], self.R[0], k, self.gamma), False)
-        received_baskets[1] = (self.gamma > 0).if_else(self.arb_lambda(price_vector[1]/price_vector[0], self.R[1], k, self.gamma), False)
+        received_baskets[0].assign((self.gamma > 0).if_else(self.arb_lambda(price_vector[0]/price_vector[1], self.R[0], k, self.gamma), False))
+        received_baskets[1].assign((self.gamma > 0).if_else(self.arb_lambda(price_vector[1]/price_vector[0], self.R[1], k, self.gamma), False))
 
         # Can simply short circuit to k.reveal() == False
         # Leaving for learning + demonstration purposes
@@ -86,7 +86,7 @@ class ProductTwoCoinCFMM(CFMM):
         def _():
             runtime_error("gamma is not nonnegative")
         
-        return (tendered_baskets, received_baskets)
+        # return (tendered_baskets, received_baskets)
 
         
 
