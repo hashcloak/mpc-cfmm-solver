@@ -40,6 +40,16 @@ class SGDOptimizer(Optimizer):
 
 class L_BFGS_BOptimizer(Optimizer):
 
+    def update_alpha(self, point_ap, guess_k, p_vec_k, rho, alpha):
+        current_position = self.function.at(point_ap).reveal()
+        future_position = self.function.at(p_vec_k) + self.function.grad(guess_k).direct_trans_mul(p_vec_k).reveal()
+        tmp = current_position - future_position
+
+        for i in tmp:
+            alpha.write((i == 0).if_else(rho * alpha, alpha).reveal())
+            
+
+
     def optimize(self, initial_guess, memory_size=17, threshold=cfix(0.000001), alpha=MemValue(cfix(1)), rho=cfix(0.5), armijo_c=cfix(0.0001), n_iter=10):
         k = regint(0)
         size = self.dimension * memory_size
@@ -68,16 +78,7 @@ class L_BFGS_BOptimizer(Optimizer):
         def f():
             @if_(k == 0)
             def _():
-                @for_range(self.dimension)
-                def _(i):
-                    @for_range(self.dimension)
-                    def _(j):
-                        @if_e(i == j)
-                        def _():
-                            invH[i][i] = 1
-                        @else_
-                        def _():
-                            invH[i][j] = 0
+                invH = self._identity()
 
             grad_f_k = self.function.grad(guess_k)
             p_vec_k.assign(invH.dot(grad_f_k))
@@ -88,9 +89,11 @@ class L_BFGS_BOptimizer(Optimizer):
             point_ap.assign_vector((alpha * p_vec_k[:]))
             point_ap.iadd(guess_k)
 
-            @while_do(lambda: self.function.at(point_ap).reveal() >= (self.function.at(p_vec_k) + self.function.grad(guess_k).direct_trans_mul(p_vec_k)).reveal())
-            def f():
-                alpha.write(rho * alpha)
+            self.update_alpha(point_ap, guess_k, p_vec_k, rho, alpha)
+
+            #@while_do(lambda: self.function.at(point_ap).reveal() >= (self.function.at(p_vec_k) + self.function.grad(guess_k).direct_trans_mul(p_vec_k)).reveal())
+            #def f():
+            #    alpha.write(rho * alpha)
 
             #@for_range(n_iter)
             #def _(i):
@@ -190,12 +193,12 @@ class LinearNonnegative:
         return zero_vec
 
     def at(self, x):
-        # TODO Implement properly
-        return sfix(0)
+        return self.constants
 
     def norm(self, x):
-        # TODO Implement properly
-        return sfix(0)
+        s = sum(self.constants)
+        norm = mpc_math.sqrt(s)
+        return norm
 
 
 c = sfix.Array(2)
