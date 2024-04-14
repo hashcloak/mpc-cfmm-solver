@@ -42,7 +42,9 @@ class L_BFGS_BOptimizer(Optimizer):
 
     def update_alpha(self, point_ap, guess_k, p_vec_k, rho, alpha):
         current_position = self.function.at(point_ap).reveal()
-        future_position = self.function.at(p_vec_k) + self.function.grad(guess_k).direct_trans_mul(p_vec_k).reveal()
+        alpha_p_vec_k = Matrix(self.dimension, 1, sfix)
+        alpha_p_vec_k.assign(alpha * p_vec_k[:])
+        future_position = self.function.at(alpha_p_vec_k) + self.function.grad(guess_k).direct_trans_mul(alpha_p_vec_k).reveal()
         tmp = current_position - future_position
 
         for i in tmp:
