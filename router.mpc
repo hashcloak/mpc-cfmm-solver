@@ -1,5 +1,5 @@
 exec(open("../cfmms.mpc").read())
-exec(open("../Optimizers.mpc").read())
+exec(open("../optimizers.mpc").read())
 
 class ArbitrageRouter:
 
@@ -35,6 +35,9 @@ class ArbitrageRouter:
         else:
             self.v.assign(price_vector)
 
+        """
+        NB: Might not need this as it's related to an implementation detail related to Julia's LBFGSB implementation.
+        NB: Maybe there might be a way to leverage this to make the computation faster. To be explored later. 
         def fn(v):
             tmp = []
             @for_range(len(self.constants))
@@ -54,6 +57,7 @@ class ArbitrageRouter:
 
         def g(v):
             pass
+        """
 
         self.find_arb(self.price_vector)
         new_price_vector = optimizer.optimize(self.price_vector)

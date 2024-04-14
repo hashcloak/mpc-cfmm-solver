@@ -23,10 +23,7 @@ class Optimizer:
         def _(i):
             @for_range(self.dimension)
             def _(j):
-                if i == j:
-                    I[i][j] = cfix(1)
-                else:
-                    I[i][j] = cfix(0)
+                I[i][j] = (i == j).if_else(cfix(1), cfix(0))
 
         return I
 
@@ -168,10 +165,11 @@ class LinearNonnegative:
         tmp = []
         @for_range(len(self.constants))
         def _(i):
-            tmp.append((self.constants[i][0] <= v[i][0]).if_else(0, False))
+            tmp.append((self.constants[i][0] <= v[i][0]).if_else(True, False))
 
-        if !all(tmp):
-            raise Exception
+        for i in tmp:
+            if i is False:
+                raise Exception
 
         zero_vec = Matrix(len(v), 1, sfix)
         zero_vec.assign_all(0)
@@ -181,10 +179,11 @@ class LinearNonnegative:
         tmp = []
         @for_range(len(self.constants))
         def _(i):
-            tmp.append((self.constants[i][0] <= v[i][0]).if_else(0, False))
+            tmp.append((self.constants[i][0] <= v[i][0]).if_else(True, False))
 
-        if !all(tmp):
-            raise Exception
+        for i in tmp:
+            if i is False:
+                raise Exception
 
         zero_vec = Matrix(len(v), 1, sfix)
         zero_vec.assign_all(0)
