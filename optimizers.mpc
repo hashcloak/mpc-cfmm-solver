@@ -157,8 +157,7 @@ class L_BFGS_BOptimizer(Optimizer):
 class LinearNonnegative:
     def __init__(self, constants):
         tmp = []
-        @for_range(len(constants))
-        def _(i):
+        for i in range(len(constants)):
             tmp.append((constants[i] > 0).if_else(True, False))
 
         for i in tmp:
@@ -168,8 +167,7 @@ class LinearNonnegative:
 
     def conjugate(self, v):
         tmp = []
-        @for_range(len(self.constants))
-        def _(i):
+        for i in range(len(constants)):
             tmp.append((self.constants[i][0] <= v[i][0]).if_else(True, False))
 
         for i in tmp:

@@ -82,9 +82,9 @@ class ProductTwoCoinCFMM(CFMM):
 
         # Can simply short circuit to k.reveal() == False
         # Leaving for learning + demonstration purposes
-        @if_(((k + tendered_baskets[0] + tendered_baskets[1] + received_baskets[0] + received_baskets[1]) == 0).reveal())
-        def _():
-            runtime_error("gamma is not nonnegative")
+        #@if_(((k + tendered_baskets[0] + tendered_baskets[1] + received_baskets[0] + received_baskets[1]) == 0).reveal())
+        #def _():
+        #    runtime_error("gamma is not nonnegative")
         
         # return (tendered_baskets, received_baskets)
 
@@ -99,11 +99,14 @@ class ProductTwoCoinCFMM(CFMM):
         
 
 class GeometricMeanTwoCoinCFMM(CFMM):
-    def __init__(self, reserves, Ai, fee, weights):
+    def __init__(self, reserves, weights, fee, Ai):
         assert len(reserves) == 2
         assert len(Ai) == 2
         assert len(weights) == 2
+        self.reserves = reserves
         self.weights = weights
+        self.fee = fee
+        self.Ai = Ai
         super().__init__(reserves, fee, Ai)
 
     def phi(self):
@@ -116,29 +119,28 @@ class GeometricMeanTwoCoinCFMM(CFMM):
         return R_prime
 
     def geom_arb_delta(self, market_reference_price, reserve1, reserve2, invariant, fee):
-        return mpc_math.pow(fee*market_reference_price*invariant*reserve1*mpc_math.pow(reserve2, invariant), 1/(invariant+1)).max(0)/fee
+        return mpc_math.pow_fx(fee*market_reference_price*invariant*reserve1*mpc_math.pow_fx(reserve2, invariant), 1/(invariant+1)).max(0)/fee
 
     def geom_arb_lambda(self, market_reference_price, reserve1, reserve2, invariant, fee):
-        return (reserve1-(reserve2*mpc_math.pow(reserve1, 1/invariant))/mpc_math.pow(invariant*fee*market_reference_price, invariant/(1+invariant))).max(0)
+        return (reserve1-(reserve2*mpc_math.pow_fx(reserve1, 1/invariant))/mpc_math.pow_fx(invariant*fee*market_reference_price, invariant/(1+invariant))).max(0)
 
     def find_arb(self, tendered_baskets, received_baskets, price_vector):
         R = self.reserves
         fee = self.fee
         eta = self.weights[1]/self.weights[0]
 
-        tendered_baskets[0] = geom_arb_delta(price_vector[1]/price_vector[0], R[1], R[0], eta, fee)
-        tendered_baskets[1] = geom_arb_delta(price_vector[0]/price_vector[1], R[0], R[1], 1/eta, fee)
+        tendered_baskets[0] = self.geom_arb_delta(price_vector[1]/price_vector[0], R[1], R[0], eta, fee)
+        tendered_baskets[1] = self.geom_arb_delta(price_vector[0]/price_vector[1], R[0], R[1], 1/eta, fee)
 
-        received_baskets[0] = geom_arb_lambda(price_vector[0]/price_vector[1], R[0], R[1], 1/eta, fee)
-        received_baskets[1] = geom_arb_lambda(price_vector[1]/price_vector[0], R[1], R[0], eta, fee)
+        received_baskets[0] = self.geom_arb_lambda(price_vector[0]/price_vector[1], R[0], R[1], 1/eta, fee)
+        received_baskets[1] = self.geom_arb_lambda(price_vector[1]/price_vector[0], R[1], R[0], eta, fee)
 
         return (tendered_baskets, received_baskets)
 
 #if __name__ == '__main__':
     # Testing Classes
 
-global_indices = regint.Array(2)
-global_indices.assign([0, 1])
+global_indices = [0, 1]
 
 reserves_prod1 = sfix.Array(2)
 reserves_prod1.assign([1000000, 1000000])

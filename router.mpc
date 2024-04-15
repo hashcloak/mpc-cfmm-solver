@@ -12,8 +12,8 @@ class ArbitrageRouter:
     """
     def __init__(self, cfmms, n_tokens, ln_objective):
         self.cfmms = cfmms
-        self.big_delta = sfix.MultiArray([len(cfmms), 2])
-        self.big_lambda = sfix.MultiArray([len(cfmms), 2])
+        self.big_delta = MultiArray([len(cfmms), 2], sfix)
+        self.big_lambda = MultiArray([len(cfmms), 2], sfix)
         self.linearnn_objective = ln_objective
 
         @for_range(len(cfmms))
@@ -25,8 +25,8 @@ class ArbitrageRouter:
         self.v.assign_all(sfix(0))
 
     def find_arb(self, price_vector):
-        for i, cfmm in zip(list(len(cfmms)), self.cfmms):
-            cfmm.find_arb(self.big_delta[i], self.big_lambda[i], cfmm, price_vector[cfmm.Ai])
+        for i, cfmm in zip(list(range(len(self.cfmms))), self.cfmms):
+            cfmm.find_arb(self.big_delta[i], self.big_lambda[i], price_vector)
             
 
     def route(self, optimizer, price_vector=None):
@@ -59,14 +59,16 @@ class ArbitrageRouter:
             pass
         """
 
-        self.find_arb(self.price_vector)
-        new_price_vector = optimizer.optimize(self.price_vector)
-        self.price_vector.assign(new_price_vector)
-        self.find_arb(self.price_vector)
+        self.find_arb(self.v)
+        new_price_vector = optimizer.optimize(self.v)[0]
+        self.v.assign(new_price_vector)
+        self.find_arb(self.v)
 
 
     def netflows(self):
-        psi = Matrix(len(self.price_vector), 1, sfix)
+        psi = Matrix(len(self.v), 1, sfix)
         for (big_delta, big_lambda, cfmm) in zip(self.big_delta, self.big_lambda, self.cfmms):
-            psi[cfmm.Ai].iadd(big_lambda - big_delta)
+            tmp = big_lambda - big_delta
+            for i in cfmm.Ai:
+                psi[i] = tmp[i]
         return psi
