@@ -41,14 +41,16 @@ class SGDOptimizer(Optimizer):
 class L_BFGS_BOptimizer(Optimizer):
 
     def update_alpha(self, point_ap, guess_k, p_vec_k, rho, alpha):
-        current_position = self.function.at(point_ap).reveal()
+        current_position = self.function.at(point_ap)
         alpha_p_vec_k = Matrix(self.dimension, 1, sfix)
         alpha_p_vec_k.assign(alpha * p_vec_k[:])
-        future_position = self.function.at(alpha_p_vec_k) + self.function.grad(guess_k).direct_trans_mul(alpha_p_vec_k).reveal()
-        tmp = current_position - future_position
+        future_position = self.function.at(alpha_p_vec_k) + self.function.grad(guess_k).direct_trans_mul(alpha_p_vec_k)
+        tmp = sfix.Array(len(current_position))
+        tmp.assign(current_position - future_position)
 
-        for i in tmp:
-            alpha.write((i == 0).if_else(rho * alpha, alpha).reveal())
+        @while_do(lambda: (tmp[:] <= 0).reveal())
+        def _():
+            alpha.write(rho * alpha)
             
 
 
