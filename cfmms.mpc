@@ -140,6 +140,7 @@ class GeometricMeanTwoCoinCFMM(CFMM):
 #if __name__ == '__main__':
     # Testing Classes
 
+"""
 global_indices = [0, 1]
 
 reserves_prod1 = sfix.Array(2)
@@ -166,3 +167,4 @@ received_assets_tmp.assign([0, 0])
 equal_pool.find_arb(tendered_assets_tmp, received_assets_tmp, price_vector)
 tendered_assets_tmp.print_reveal_nested()
 received_assets_tmp.print_reveal_nested()
+"""
