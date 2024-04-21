@@ -3,6 +3,10 @@ exec(open("../router.mpc").read())
 exec(open("../optimizers.mpc").read())
 # Skeleton code. Doesn't compile as of Nov 18
 
+sfix.round_nearest = True
+cfix.set_precision(f=8, k=34)
+sfix.set_precision(f=8, k=34)
+
 # Create pools
 reserves_eq = sfix.Array(2)
 reserves_eq.assign([1000000, 1000000])

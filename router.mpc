@@ -16,7 +16,7 @@ class ArbitrageRouter:
         self.big_lambda = MultiArray([len(cfmms), 2], sfix)
         self.linearnn_objective = ln_objective
 
-        @for_range(len(cfmms))
+        @for_range_opt(len(cfmms))
         def _(i):
             self.big_delta.assign_all(sfix(0))
             self.big_lambda.assign_all(sfix(0))
