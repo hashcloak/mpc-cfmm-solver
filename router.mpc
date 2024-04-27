@@ -31,7 +31,7 @@ class ArbitrageRouter:
 
     def route(self, optimizer, price_vector=None):
         if price_vector is None:
-            self.v.assign_all(sfix(1)) # OG code says to use initial marginal price here
+            self.v.assign_all(sfix(1/2)) # OG code says to use initial marginal price here
         else:
             self.v.assign(price_vector)
 
@@ -60,8 +60,8 @@ class ArbitrageRouter:
         """
 
         self.find_arb(self.v)
-        new_price_vector = optimizer.optimize(self.v, threshold=cfix(1.41))[0]
-        print_ln("router.v: %s", new_price_vector.reveal())
+        new_price_vector = optimizer.optimize(self.v, threshold=cfix(1))[0]
+        #print_ln("router.v: %s", new_price_vector.reveal())
         self.v.assign(new_price_vector)
         self.find_arb(self.v)
 
