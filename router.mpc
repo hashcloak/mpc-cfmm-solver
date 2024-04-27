@@ -60,7 +60,8 @@ class ArbitrageRouter:
         """
 
         self.find_arb(self.v)
-        new_price_vector = optimizer.optimize(self.v)[0]
+        new_price_vector = optimizer.optimize(self.v, threshold=cfix(1.41))[0]
+        print_ln("router.v: %s", new_price_vector.reveal())
         self.v.assign(new_price_vector)
         self.find_arb(self.v)
 
