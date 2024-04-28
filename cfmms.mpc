@@ -6,9 +6,9 @@ from Compiler import mpc_math
 
 class CFMM:
     """
-    reserves: list[sfix]
+    reserves: Matrix[sfix]
     gamma: sfix
-    Ai: Array[int]
+    Ai: Array[regint]
     """
     def __init__(self, reserves, fee, Ai):
         self.R = reserves
@@ -30,8 +30,8 @@ class CFMM:
         
 
     """
-    price_vector: list[sfix]
-    reservers: list[sfix]
+    price_vector: Matrix[sfix]
+    reserves: Matrix[sfix]
     invariant: sfix
     fee: sfix
     """
@@ -39,8 +39,8 @@ class CFMM:
         pass
 
     """
-    price_vector: list[sfix]
-    reservers: list[sfix]
+    price_vector: Matrix[sfix]
+    reserves: Matrix[sfix]
     invariant: sfix
     fee: sfix
     """
@@ -59,12 +59,16 @@ class ProductTwoCoinCFMM(CFMM):
         super().__init__(reserves, fee, Ai)
 
     def phi(self):
-        return self.R[0] * self.R[1]
+        #print(type(self.R[0][0] * self.R[1][0]))
+        return self.R[0][0] * self.R[1][0]
 
     def gradient_phi(self):
-        R_prime = sfix.Array(len(self.R))
-        R_prime[0] = self.R[1]
-        R_prime[1] = self.R[0]
+        R_prime = Matrix(len(self.R), 1, sfix)
+        R_prime[0][0] = self.R[0][1]
+        R_prime[0][1]= self.R[0][0]
+        #R_prime = sfix.Array(len(self.R))
+        #R_prime[0] = self.R[1]
+        #R_prime[1] = self.R[0]
         return R_prime
 
     def find_arb(self, tendered_baskets, received_baskets, price_vector):
@@ -79,11 +83,11 @@ class ProductTwoCoinCFMM(CFMM):
         #print(type(tendered_baskets))
         #print(type(received_baskets))
         #print(type(price_vector))
-        tendered_baskets[0] = (self.gamma > 0).if_else(self.arb_delta(price_vector[1]/price_vector[0], self.R[0], k, self.gamma), False)
-        tendered_baskets[1] = (self.gamma > 0).if_else(self.arb_delta(price_vector[0]/price_vector[1], self.R[1], k, self.gamma), False)
+        tendered_baskets[0] = (self.gamma > 0).if_else(self.arb_delta(price_vector[1][0]/price_vector[0][0], self.R[0][0], k, self.gamma), False)
+        tendered_baskets[1] = (self.gamma > 0).if_else(self.arb_delta(price_vector[0][0]/price_vector[1][0], self.R[1][0], k, self.gamma), False)
 
-        received_baskets[0] = (self.gamma > 0).if_else(self.arb_lambda(price_vector[0]/price_vector[1], self.R[0], k, self.gamma), False)
-        received_baskets[1] = (self.gamma > 0).if_else(self.arb_lambda(price_vector[1]/price_vector[0], self.R[1], k, self.gamma), False)
+        received_baskets[0] = (self.gamma > 0).if_else(self.arb_lambda(price_vector[0][0]/price_vector[1][0], self.R[0][0], k, self.gamma), False)
+        received_baskets[1] = (self.gamma > 0).if_else(self.arb_lambda(price_vector[1][0]/price_vector[0][0], self.R[1][0], k, self.gamma), False)
 
         # Can simply short circuit to k.reveal() == False
         # Leaving for learning + demonstration purposes
@@ -118,9 +122,10 @@ class GeometricMeanTwoCoinCFMM(CFMM):
         return (self.R[0]**self.weights[0]) * (self.R[1]**self.weights[1])
 
     def gradient_phi(self):
-        R_prime = sfix.Array(len(self.R))
-        R_prime[0] = self.weights[0] * (self.R[1]/self.R[0])**self.weights[1]
-        R_prime[1] = self.weights[1] * (self.R[0]/self.R[1])**self.weights[0]
+        #R_prime = sfix.Array(len(self.R))
+        R_prime = Matrix(len(self.R), 1, sfix)
+        R_prime[0][0] = self.weights[0][0] * (self.R[0][1]/self.R[0][0])**self.weights[0][1]
+        R_prime[1][0] = self.weights[1][0] * (self.R[0][0]/self.R[1][0])**self.weights[0][0]
         return R_prime
 
     def geom_arb_delta(self, market_reference_price, reserve1, reserve2, invariant, fee):
@@ -132,13 +137,13 @@ class GeometricMeanTwoCoinCFMM(CFMM):
     def find_arb(self, tendered_baskets, received_baskets, price_vector):
         R = self.reserves
         fee = self.fee
-        eta = self.weights[1]/self.weights[0]
+        eta = self.weights[1][0]/self.weights[0][0]
 
-        tendered_baskets[0] = self.geom_arb_delta(price_vector[1]/price_vector[0], R[1], R[0], eta, fee)
-        tendered_baskets[1] = self.geom_arb_delta(price_vector[0]/price_vector[1], R[0], R[1], 1/eta, fee)
+        tendered_baskets[0] = self.geom_arb_delta(price_vector[1][0]/price_vector[0][0], R[1][0], R[0][0], eta, fee)
+        tendered_baskets[1] = self.geom_arb_delta(price_vector[0][0]/price_vector[1][0], R[0][0], R[1][0], 1/eta, fee)
 
-        received_baskets[0] = self.geom_arb_lambda(price_vector[0]/price_vector[1], R[0], R[1], 1/eta, fee)
-        received_baskets[1] = self.geom_arb_lambda(price_vector[1]/price_vector[0], R[1], R[0], eta, fee)
+        received_baskets[0] = self.geom_arb_lambda(price_vector[0][0]/price_vector[1][0], R[0][0], R[1][0], 1/eta, fee)
+        received_baskets[1] = self.geom_arb_lambda(price_vector[1][0]/price_vector[0][0], R[1][0], R[0][0], eta, fee)
 
         return (tendered_baskets, received_baskets)
 

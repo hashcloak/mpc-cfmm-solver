@@ -61,9 +61,11 @@ class ArbitrageRouter:
                 #print(type(v[cfmm.Ai]))
                 tmp_big_delta = Matrix(len(big_delta), 1, sfix)
                 tmp_big_lambda = Matrix(len(big_lambda), 1, sfix)
-                accumulator += (tmp_big_lambda.dot(v[cfmm.Ai]) - tmp_big_delta.dot(v[cfmm.Ai]))
+                #print(type(tmp_big_lambda))
+                #print(type(v.get_vector_by_indices(*cfmm.Ai)))
+                accumulator += (tmp_big_lambda.dot(v.get_vector_by_indices(*cfmm.Ai)) - tmp_big_delta.dot(v.get_vector_by_indices(*cfmm.Ai)))
 
-            return self.linearnn_objective.conjugate(v) + accumulator
+            return self.linearnn_objective.conjugate(v)[:] + accumulator
 
         def g(v):
             G = Matrix(len(self.v), 1, sfix) 
