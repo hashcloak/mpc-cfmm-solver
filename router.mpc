@@ -1,6 +1,13 @@
 exec(open("../cfmms.mpc").read())
 exec(open("../optimizers.mpc").read())
 
+sfix.round_nearest = True
+cfix.set_precision(f=16, k=40)
+sfix.set_precision(f=16, k=40)
+
+program.use_edabit(True)
+program.use_split(4)
+
 class ArbitrageRouter:
 
     """
@@ -116,6 +123,7 @@ class ArbitrageRouter:
         psi = Matrix(len(self.v), 1, sfix)
         for (big_delta, big_lambda, cfmm) in zip(self.big_delta, self.big_lambda, self.cfmms):
             tmp = big_lambda - big_delta
-            for i in cfmm.Ai:
-                psi[i] = tmp[i]
+            psi.assign_vector_by_indices(tmp, *cfmm.Ai)
+            #for i in cfmm.Ai:
+            #    psi[i] = tmp[i]
         return psi

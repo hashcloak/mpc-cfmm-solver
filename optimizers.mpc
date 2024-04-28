@@ -1,6 +1,8 @@
 from Compiler import mpc_math, ml
 
 program.use_edabit(True)
+program.use_split(4)
+
 
 sfix.round_nearest = True
 cfix.set_precision(f=16, k=40)
@@ -116,7 +118,7 @@ class L_BFGS_BOptimizer(Optimizer):
                 tmp_grad_f_k.assign(grad_f_k)
                 p_vec_k.assign(invH.dot(tmp_grad_f_k))
                 #print_ln("%s", invH.dot(grad_f_k).reveal())
-                #print_ln("%s", p_vec_k.reveal())
+                print_ln("%s", p_vec_k.reveal())
                 #invH.dot(grad_f_k).print_reveal_nested()
 
                 # Compute line search using backtracking
@@ -191,7 +193,8 @@ class LinearNonnegative:
         #        raise Exception
 
         # NB: Probably shouldn't reveal this
-        runtime_error_if((constants[0][:] > 0).reveal(), "all elements must be strictly positive")
+        #print_ln("%s", constants[:].reveal())
+        runtime_error_if((constants[:] <= 0).reveal(), "all elements must be strictly positive")
     
         self.constants = constants
         #return self.constants
@@ -209,6 +212,7 @@ class LinearNonnegative:
 
         tmp = Matrix(len(v), 1, sfix)
         tmp.assign(v[:][0] - self.constants[:][0])
+        #tmp.print_reveal_nested()
 
         zero_vec = Matrix(len(v), 1, sfix)
 
@@ -217,7 +221,8 @@ class LinearNonnegative:
             zero_vec.assign_all(0)
         @else_
         def _():
-            runtime_error("Constants must be at most coefficients in v")
+        #    runtime_error("Constants must be at most coefficients in v")
+            return zero_vec
 
         return zero_vec
             
@@ -254,7 +259,8 @@ class LinearNonnegative:
             zero_vec.assign_all(0)
         @else_
         def _():
-            runtime_error("Constants must be at most coefficients in v")
+        #    runtime_error("Constants must be at most coefficients in v")
+            return zero_vec
 
         return zero_vec
 
