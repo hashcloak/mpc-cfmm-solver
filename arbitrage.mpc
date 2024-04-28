@@ -10,18 +10,18 @@ sfix.set_precision(f=16, k=40)
 # Create pools
 reserves_eq = sfix.Array(2)
 reserves_eq.assign([1000000, 1000000])
-globals_eq = [0, 1]
+globals_eq = Array.create_from([regint(0), regint(1)])
 fee = sfix(1)
 equal_pool = ProductTwoCoinCFMM(reserves_eq, fee, globals_eq)
 
 reserves_uneq = sfix.Array(2)
 reserves_uneq.assign_vector([1000, 2000])
-globals_uneq = [0, 1]
+globals_uneq = Array.create_from([regint(0), regint(1)])
 unequal_small_pool = ProductTwoCoinCFMM(reserves_uneq, fee, globals_uneq)
 
 reserves_weighted = sfix.Array(2)
 reserves_weighted.assign_vector([1000, 2000])
-globals_weighted = [0, 1]
+globals_weighted = Array.create_from([regint(0), regint(1)])
 weights = sfix.Array(2)
 weights.assign_vector([0.4, 0.6])
 weighted_pool = GeometricMeanTwoCoinCFMM(reserves_weighted, weights, fee, globals_weighted)
@@ -30,6 +30,8 @@ weighted_pool = GeometricMeanTwoCoinCFMM(reserves_weighted, weights, fee, global
 # Just get the market price of assets from a player. Will change to MPCaaS setting client later.
 price_vector = sfix.Array(2)
 price_vector[0], price_vector[1] = sfix.get_input_from(0, size=2)
+#print("from arbitrage.mpc")
+#print(type(price_vector[0]))
 lin_obj = LinearNonnegative(price_vector)
 l_bfgs_b_opt = L_BFGS_BOptimizer(lin_obj, 2)
 router = ArbitrageRouter([equal_pool, unequal_small_pool, weighted_pool], 2, lin_obj)
