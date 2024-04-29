@@ -1,14 +1,15 @@
 from Compiler import mpc_math, ml
-
+sfix.round_nearest = True
+"""
 program.use_edabit(True)
 program.use_split(4)
+"""
 
-
-sfix.round_nearest = True
 cfix.set_precision(f=16, k=40)
 sfix.set_precision(f=16, k=40)
-
+"""
 program.use_edabit(True)
+"""
 
 class Optimizer:
 
@@ -34,7 +35,7 @@ class SGDOptimizer(Optimizer):
 
     def optimize(self, initial_guess, learning_rate=sfix(0.01), n_iter=10):
         guess = sfix(initial_guess)
-        @for_range(n_iter)
+        @for_range_opt(n_iter)
         def _(i):
             guess.update(guess - learning_rate * self.function.grad(guess))
 
@@ -85,15 +86,13 @@ class L_BFGS_BOptimizer(Optimizer):
             def _():
                 break_loop()
 
-    def optimize(self, initial_guess, fn=None, g=None, memory_size=17, threshold=cfix(0.0001), alpha=MemValue(cfix(0.5)), rho=cfix(0.5), armijo_c=cfix(0.0001), c_2=cfix(0.9), n_iter=10):
+    def optimize(self, initial_guess, fn=None, g=None, threshold=cfix(0.0001), alpha=MemValue(cfix(0.5)), rho=cfix(0.5), armijo_c=cfix(0.0001), c_2=cfix(0.9), n_iter=10):
         k = regint(0)
 
         guess_k = Matrix(len(initial_guess), 1, sfix)
-        #guess_k = Array.create_from(initial_guess)
         guess_k.assign(initial_guess)
-        #print("from optimizers.mpc")
-        #print(type(initial_guess))
-        grad_f_k = g(guess_k)
+        grad_f_k = Matrix(len(initial_guess), 1, sfix)
+        grad_f_k.assign(g(guess_k))
         prev_guess_k = Matrix(len(initial_guess), 1, sfix)
         prev_grad_k = Matrix(len(initial_guess), 1, sfix)
 
@@ -103,8 +102,6 @@ class L_BFGS_BOptimizer(Optimizer):
 
         @for_range_opt(n_iter)
         def _(i):
-            #print_ln("%s", self.function.grad(guess_k).reveal())
-            #print_ln("%s", threshold)
             @if_e((self.function.norm(g(guess_k)) > threshold).reveal())
             def _():
                 #print_ln("%s", (self.function.norm(self.function.grad(guess_k)) > threshold).reveal())
@@ -117,12 +114,6 @@ class L_BFGS_BOptimizer(Optimizer):
                 tmp_grad_f_k = Matrix(len(grad_f_k), 1, sfix)
                 tmp_grad_f_k.assign(grad_f_k)
                 p_vec_k.assign(invH.dot(tmp_grad_f_k))
-                #print_ln("%s", invH.dot(grad_f_k).reveal())
-                print_ln("%s", p_vec_k.reveal())
-                #invH.dot(grad_f_k).print_reveal_nested()
-
-                # Compute line search using backtracking
-                # It's okay to reveal here since we aren't revealing guess_k itself
 
                 self.update_alpha(guess_k, p_vec_k, rho, alpha, armijo_c, c_2, n_iter=10, fn=fn, g=g)
 

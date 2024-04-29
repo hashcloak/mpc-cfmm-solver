@@ -3,13 +3,14 @@
 """
 
 from Compiler import mpc_math
-
+"""
 sfix.round_nearest = True
 cfix.set_precision(f=16, k=40)
 sfix.set_precision(f=16, k=40)
 
 program.use_edabit(True)
 program.use_split(4)
+"""
 
 class CFMM:
     """
