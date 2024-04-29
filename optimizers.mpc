@@ -1,5 +1,8 @@
 from Compiler import mpc_math, ml
 sfix.round_nearest = True
+#cfix.set_precision(f=16, k=50)
+#sfix.set_precision(f=16, k=50)
+
 """
 program.use_edabit(True)
 program.use_split(4)
