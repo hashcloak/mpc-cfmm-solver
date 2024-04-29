@@ -4,8 +4,8 @@ exec(open("../optimizers.mpc").read())
 # Skeleton code. Doesn't compile as of Nov 18
 
 sfix.round_nearest = True
-cfix.set_precision(f=16, k=40)
-sfix.set_precision(f=16, k=40)
+cfix.set_precision(f=32, k=80)
+sfix.set_precision(f=32, k=80)
 
 program.use_edabit(True)
 #program.use_split(4)
