@@ -1,5 +1,5 @@
 from Compiler import mpc_math, ml
-sfix.round_nearest = True
+#sfix.round_nearest = True
 #cfix.set_precision(f=16, k=50)
 #sfix.set_precision(f=16, k=50)
 
@@ -8,8 +8,8 @@ program.use_edabit(True)
 program.use_split(4)
 """
 
-cfix.set_precision(f=32, k=80)
-sfix.set_precision(f=32, k=80)
+cfix.set_precision(f=32, k=128)
+sfix.set_precision(f=32, k=128)
 """
 program.use_edabit(True)
 """
@@ -84,7 +84,7 @@ class L_BFGS_BOptimizer(Optimizer):
                     #print_ln("rho * alpha: %s", rho * alpha)
                     alpha.write(rho * alpha)
                     alpha_p_vec_k.assign(alpha * p_vec_k[:])
-                    alpha_armijo_c_p_vec_k.assign(-armijo_c * alpha_p_vec_k[:])
+                    alpha_armijo_c_p_vec_k.assign((-armijo_c * alpha_p_vec_k[:]))
             @else_
             def _():
                 break_loop()
@@ -95,7 +95,6 @@ class L_BFGS_BOptimizer(Optimizer):
         guess_k = Matrix(len(initial_guess), 1, sfix)
         guess_k.assign(initial_guess)
         grad_f_k = Matrix(len(initial_guess), 1, sfix)
-        grad_f_k.assign(g(guess_k))
         prev_guess_k = Matrix(len(initial_guess), 1, sfix)
         prev_grad_k = Matrix(len(initial_guess), 1, sfix)
 
@@ -105,6 +104,8 @@ class L_BFGS_BOptimizer(Optimizer):
 
         @for_range_opt(n_iter)
         def _(i):
+
+        #for i in range(n_iter):
             @if_e((self.function.norm(g(guess_k)) > threshold).reveal())
             def _():
                 #print_ln("%s", (self.function.norm(self.function.grad(guess_k)) > threshold).reveal())
@@ -113,12 +114,13 @@ class L_BFGS_BOptimizer(Optimizer):
                 def _():
                     invH.assign(self._identity())
 
-                grad_f_k = g(guess_k)
-                tmp_grad_f_k = Matrix(len(grad_f_k), 1, sfix)
-                tmp_grad_f_k.assign(grad_f_k)
-                p_vec_k.assign(invH.dot(tmp_grad_f_k))
+                invH.print_reveal_nested()
+
+                grad_f_k.assign(g(guess_k))
+                p_vec_k.assign(invH.dot(grad_f_k))
 
                 self.update_alpha(guess_k, p_vec_k, rho, alpha, armijo_c, c_2, n_iter=10, fn=fn, g=g)
+                #print_ln("alpha: %s", alpha.reveal())
 
                 prev_guess_k.assign(guess_k)
                 tmp = Matrix(self.dimension, 1, sfix)
@@ -263,7 +265,7 @@ class LinearNonnegative:
 
     def norm(self, x):
         s = sum(self.constants)
-        norm = mpc_math.sqrt(s)
+        norm = mpc_math.sqrt(sfix(s))
         return norm
 
 """

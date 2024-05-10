@@ -14,7 +14,7 @@ class ArbitrageRouter:
 
     """
     cfmms: List[CFMM]
-    n_tokens: sint
+    n_tokens: sfix
     tendered_assets: List[List[sfix]]
     received_assets: List[List[sfix]]
     price_vector: List[sfix]
@@ -38,6 +38,8 @@ class ArbitrageRouter:
             #print("from router.find_arb")
             #print(type(price_vector))
             cfmm.find_arb(self.big_delta[i], self.big_lambda[i], price_vector)
+            #self.big_delta.print_reveal_nested()
+            #self.big_lambda.print_reveal_nested()
             
 
     def route(self, optimizer, price_vector=None):
@@ -47,6 +49,8 @@ class ArbitrageRouter:
             self.v.assign(price_vector)
             #print("from router.route")
             #print(type(self.v))
+
+        #price_vector.print_reveal_nested()
 
         
         #NB: Might not need this as it's related to an implementation detail related to Julia's LBFGSB implementation.
@@ -113,7 +117,7 @@ class ArbitrageRouter:
         
 
         self.find_arb(self.v)
-        new_price_vector = optimizer.optimize(self.v, fn, g)[0]
+        new_price_vector = optimizer.optimize(self.v, fn, g, n_iter=2)[0]
         #print_ln("router.v: %s", new_price_vector.reveal())
         self.v.assign(new_price_vector)
         #print("from router.route")
