@@ -1,12 +1,18 @@
 from Compiler import mpc_math, ml
+#sfix.round_nearest = True
+#cfix.set_precision(f=16, k=50)
+#sfix.set_precision(f=16, k=50)
 
+"""
 program.use_edabit(True)
+program.use_split(4)
+"""
 
-sfix.round_nearest = True
-cfix.set_precision(f=16, k=40)
-sfix.set_precision(f=16, k=40)
-
+cfix.set_precision(f=32, k=128)
+sfix.set_precision(f=32, k=128)
+"""
 program.use_edabit(True)
+"""
 
 class Optimizer:
 
@@ -32,7 +38,7 @@ class SGDOptimizer(Optimizer):
 
     def optimize(self, initial_guess, learning_rate=sfix(0.01), n_iter=10):
         guess = sfix(initial_guess)
-        @for_range(n_iter)
+        @for_range_opt(n_iter)
         def _(i):
             guess.update(guess - learning_rate * self.function.grad(guess))
 
@@ -40,7 +46,7 @@ class SGDOptimizer(Optimizer):
 
 class L_BFGS_BOptimizer(Optimizer):
 
-    def update_alpha(self, guess_k, p_vec_k, rho, alpha, armijo_c, c_2, n_iter=10):
+    def update_alpha(self, guess_k, p_vec_k, rho, alpha, armijo_c, c_2, n_iter=10, fn=None, g=None):
         alpha_p_vec_k = Matrix(self.dimension, 1, sfix)
         alpha_p_vec_k.assign(alpha * p_vec_k[:])
         alpha_armijo_c_p_vec_k = Matrix(self.dimension, 1, sfix)
@@ -66,29 +72,29 @@ class L_BFGS_BOptimizer(Optimizer):
         tmp1 = Matrix(self.dimension, 1, sfix)
         @for_range_opt(n_iter)
         def _(i):
-            tmp1.assign(self.function.at(guess_k) - (self.function.at(guess_k + alpha_p_vec_k)) + self.function.grad(guess_k).direct_trans_mul(alpha_armijo_c_p_vec_k))
+            tmp1.assign(fn(guess_k) - (fn(guess_k + alpha_p_vec_k)) + g(guess_k).direct_trans_mul(alpha_armijo_c_p_vec_k))
             @if_e((tmp1[:] >= 0).reveal())
             def _():
                 tmp2 = Matrix(self.dimension, 1, sfix)
                 c2_p_vec_k = Matrix(self.dimension, 1, sfix)
                 c2_p_vec_k.assign(-c_2 * p_vec_k[:])
-                tmp2.assign(p_vec_k.direct_trans_mul(self.function.grad(guess_k + alpha_p_vec_k)) + c2_p_vec_k.direct_trans_mul(self.function.grad(guess_k)))
+                tmp2.assign(p_vec_k.direct_trans_mul(g(guess_k + alpha_p_vec_k)) + c2_p_vec_k.direct_trans_mul(g(guess_k)))
                 @if_((tmp2[:] >= 0).reveal())
                 def _():
                     #print_ln("rho * alpha: %s", rho * alpha)
                     alpha.write(rho * alpha)
                     alpha_p_vec_k.assign(alpha * p_vec_k[:])
-                    alpha_armijo_c_p_vec_k.assign(-armijo_c * alpha_p_vec_k[:])
+                    alpha_armijo_c_p_vec_k.assign((-armijo_c * alpha_p_vec_k[:]))
             @else_
             def _():
                 break_loop()
 
-    def optimize(self, initial_guess, memory_size=17, threshold=cfix(0.0001), alpha=MemValue(cfix(0.5)), rho=cfix(0.5), armijo_c=cfix(0.0001), c_2=cfix(0.9), n_iter=10):
+    def optimize(self, initial_guess, fn=None, g=None, threshold=cfix(0.0001), alpha=MemValue(cfix(0.5)), rho=cfix(0.5), armijo_c=cfix(0.0001), c_2=cfix(0.9), n_iter=10):
         k = regint(0)
 
         guess_k = Matrix(len(initial_guess), 1, sfix)
         guess_k.assign(initial_guess)
-        grad_f_k = self.function.grad(guess_k)
+        grad_f_k = Matrix(len(initial_guess), 1, sfix)
         prev_guess_k = Matrix(len(initial_guess), 1, sfix)
         prev_grad_k = Matrix(len(initial_guess), 1, sfix)
 
@@ -98,9 +104,9 @@ class L_BFGS_BOptimizer(Optimizer):
 
         @for_range_opt(n_iter)
         def _(i):
-            #print_ln("%s", self.function.grad(guess_k).reveal())
-            #print_ln("%s", threshold)
-            @if_e((self.function.norm(self.function.grad(guess_k)) > threshold).reveal())
+
+        #for i in range(n_iter):
+            @if_e((self.function.norm(g(guess_k)) > threshold).reveal())
             def _():
                 #print_ln("%s", (self.function.norm(self.function.grad(guess_k)) > threshold).reveal())
                 #alpha.write(cfix(1))
@@ -108,16 +114,13 @@ class L_BFGS_BOptimizer(Optimizer):
                 def _():
                     invH.assign(self._identity())
 
-                grad_f_k = self.function.grad(guess_k)
+                invH.print_reveal_nested()
+
+                grad_f_k.assign(g(guess_k))
                 p_vec_k.assign(invH.dot(grad_f_k))
-                #print_ln("%s", invH.dot(grad_f_k).reveal())
-                #print_ln("%s", p_vec_k.reveal())
-                #invH.dot(grad_f_k).print_reveal_nested()
 
-                # Compute line search using backtracking
-                # It's okay to reveal here since we aren't revealing guess_k itself
-
-                self.update_alpha(guess_k, p_vec_k, rho, alpha, armijo_c, c_2, n_iter=10)
+                self.update_alpha(guess_k, p_vec_k, rho, alpha, armijo_c, c_2, n_iter=10, fn=fn, g=g)
+                #print_ln("alpha: %s", alpha.reveal())
 
                 prev_guess_k.assign(guess_k)
                 tmp = Matrix(self.dimension, 1, sfix)
@@ -129,7 +132,7 @@ class L_BFGS_BOptimizer(Optimizer):
                 #S_k = Matrix(len(S[k]), 1, S[k].value_type, address=S[k].address)
 
                 prev_grad_k.assign(grad_f_k)
-                grad_f_k.assign(self.function.grad(guess_k))
+                grad_f_k.assign(g(guess_k))
                 Y_k = Matrix(self.dimension, 1, sfix)
                 Y_k.assign(grad_f_k - prev_grad_k)
                 #Y_k = Matrix(len(Y[k]), 1, Y[k].value_type, address=Y[k].address)
@@ -177,16 +180,23 @@ class L_BFGS_BOptimizer(Optimizer):
 
 class LinearNonnegative:
     def __init__(self, constants):
-        tmp = []
-        for i in range(len(constants)):
-            tmp.append((constants[i] > 0).if_else(True, False))
+        #tmp = []
+        #for i in range(len(constants)):
+        #    tmp.append((constants[i] > 0).if_else(True, False))
 
-        for i in tmp:
-            if i is False:
-                raise Exception
+        #for i in tmp:
+        #    if i is False:
+        #        raise Exception
+
+        # NB: Probably shouldn't reveal this
+        #print_ln("%s", constants[:].reveal())
+        runtime_error_if((constants[:] <= 0).reveal(), "all elements must be strictly positive")
+    
         self.constants = constants
+        #return self.constants
 
     def conjugate(self, v):
+        """
         tmp = []
         for i in range(len(constants)):
             tmp.append((self.constants[i][0] <= v[i][0]).if_else(True, False))
@@ -194,12 +204,33 @@ class LinearNonnegative:
         for i in tmp:
             if i is False:
                 raise Exception
+        """
+
+        tmp = Matrix(len(v), 1, sfix)
+        tmp.assign(v[:][0] - self.constants[:][0])
+        #tmp.print_reveal_nested()
 
         zero_vec = Matrix(len(v), 1, sfix)
+
+        @if_e((tmp[:] >= 0).reveal())
+        def _():
+            zero_vec.assign_all(0)
+        @else_
+        def _():
+        #    runtime_error("Constants must be at most coefficients in v")
+            return zero_vec
+
+        return zero_vec
+            
+        """
+        zero_vec = Matrix(len(v), 1, sfix)
+        #zero_vec = sfix.Array(2)
         zero_vec.assign_all(0)
         return zero_vec
+        """
 
     def grad(self, v):
+        """
         tmp = []
         @for_range(len(self.constants))
         def _(i):
@@ -212,13 +243,29 @@ class LinearNonnegative:
         zero_vec = Matrix(len(v), 1, sfix)
         zero_vec.assign_all(0)
         return zero_vec
+        """
+
+        tmp = Matrix(len(v), 1, sfix)
+        tmp.assign(v[:][0] - self.constants[:][0])
+
+        zero_vec = Matrix(len(v), 1, sfix)
+
+        @if_e((tmp[:] >= 0).reveal())
+        def _():
+            zero_vec.assign_all(0)
+        @else_
+        def _():
+        #    runtime_error("Constants must be at most coefficients in v")
+            return zero_vec
+
+        return zero_vec
 
     def at(self, x):
         return self.constants
 
     def norm(self, x):
         s = sum(self.constants)
-        norm = mpc_math.sqrt(s)
+        norm = mpc_math.sqrt(sfix(s))
         return norm
 
 """
