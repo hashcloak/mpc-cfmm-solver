@@ -74,9 +74,6 @@ class ProductTwoCoinCFMM(CFMM):
         R_prime = Matrix(len(self.R), 1, sfix)
         R_prime[0][0] = self.R[0][1]
         R_prime[0][1]= self.R[0][0]
-        #R_prime = sfix.Array(len(self.R))
-        #R_prime[0] = self.R[1]
-        #R_prime[1] = self.R[0]
         return R_prime
 
     def find_arb(self, tendered_baskets, received_baskets, price_vector):
@@ -86,24 +83,11 @@ class ProductTwoCoinCFMM(CFMM):
         runtime_error_if(is_gamma_nonneg.reveal() == 0, "Gamma should be nonnegative")
 
         k = (self.gamma > 0).if_else(self.phi(), False)
-        #print("From cfmms.mpc")
-        #print(type(price_vector[0]))
-        #print(type(tendered_baskets))
-        #print(type(received_baskets))
-        #print(type(price_vector))
         tendered_baskets[0] = (self.gamma > 0).if_else(self.arb_delta(price_vector[1][0]/price_vector[0][0], self.R[0][0], k, self.gamma), False)
         tendered_baskets[1] = (self.gamma > 0).if_else(self.arb_delta(price_vector[0][0]/price_vector[1][0], self.R[1][0], k, self.gamma), False)
 
         received_baskets[0] = (self.gamma > 0).if_else(self.arb_lambda(price_vector[0][0]/price_vector[1][0], self.R[0][0], k, self.gamma), False)
         received_baskets[1] = (self.gamma > 0).if_else(self.arb_lambda(price_vector[1][0]/price_vector[0][0], self.R[1][0], k, self.gamma), False)
-
-        # Can simply short circuit to k.reveal() == False
-        # Leaving for learning + demonstration purposes
-        #@if_(((k + tendered_baskets[0] + tendered_baskets[1] + received_baskets[0] + received_baskets[1]) == 0).reveal())
-        #def _():
-        #    runtime_error("gamma is not nonnegative")
-        
-        #return (tendered_baskets, received_baskets)
 
         
 
@@ -130,7 +114,6 @@ class GeometricMeanTwoCoinCFMM(CFMM):
         return (self.R[0]**self.weights[0]) * (self.R[1]**self.weights[1])
 
     def gradient_phi(self):
-        #R_prime = sfix.Array(len(self.R))
         R_prime = Matrix(len(self.R), 1, sfix)
         R_prime[0][0] = self.weights[0][0] * (self.R[0][1]/self.R[0][0])**self.weights[0][1]
         R_prime[1][0] = self.weights[1][0] * (self.R[0][0]/self.R[1][0])**self.weights[0][0]
@@ -154,35 +137,3 @@ class GeometricMeanTwoCoinCFMM(CFMM):
         received_baskets[1] = self.geom_arb_lambda(price_vector[1][0]/price_vector[0][0], R[1][0], R[0][0], eta, fee)
 
         return (tendered_baskets, received_baskets)
-
-#if __name__ == '__main__':
-    # Testing Classes
-
-"""
-global_indices = [0, 1]
-
-reserves_prod1 = sfix.Array(2)
-reserves_prod1.assign([1000000, 1000000])
-fee = sfix(1)
-equal_pool = ProductTwoCoinCFMM(reserves_prod1, fee, global_indices)
-
-reserves_prod2 = sfix.Array(2)
-reserves_prod2.assign([1000, 2000])
-unequal_small_pool = ProductTwoCoinCFMM(reserves_prod2, fee, global_indices)
-
-reserves_prod3 = sfix.Array(2)
-reserves_prod3.assign([10000, 20000])
-weights = sfix.Array(2)
-weights.assign([0.4, 0.6])
-weighted_pool = GeometricMeanTwoCoinCFMM(reserves_prod3, weights, fee, global_indices)
-
-price_vector = sfix.Array(2)
-price_vector.assign([1, 1])
-tendered_assets_tmp = sfix.Array(2)
-tendered_assets_tmp.assign([0, 0])
-received_assets_tmp = sfix.Array(2)
-received_assets_tmp.assign([0, 0])
-equal_pool.find_arb(tendered_assets_tmp, received_assets_tmp, price_vector)
-tendered_assets_tmp.print_reveal_nested()
-received_assets_tmp.print_reveal_nested()
-"""

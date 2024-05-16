@@ -35,11 +35,7 @@ class ArbitrageRouter:
 
     def find_arb(self, price_vector):
         for i, cfmm in zip(list(range(len(self.cfmms))), self.cfmms):
-            #print("from router.find_arb")
-            #print(type(price_vector))
             cfmm.find_arb(self.big_delta[i], self.big_lambda[i], price_vector)
-            #self.big_delta.print_reveal_nested()
-            #self.big_lambda.print_reveal_nested()
             
 
     def route(self, optimizer, price_vector=None):
@@ -47,14 +43,7 @@ class ArbitrageRouter:
             self.v.assign_all(sfix(1/2)) # OG code says to use initial marginal price here
         else:
             self.v.assign(price_vector)
-            #print("from router.route")
-            #print(type(self.v))
 
-        #price_vector.print_reveal_nested()
-
-        
-        #NB: Might not need this as it's related to an implementation detail related to Julia's LBFGSB implementation.
-        #NB: Maybe there might be a way to leverage this to make the computation faster. To be explored later. 
         def fn(v):
             tmp = Matrix(len(self.v), 1, sfix)
             @for_range_opt(len(self.v))
@@ -69,23 +58,16 @@ class ArbitrageRouter:
             accumulator = sfix(0)
 
             for (big_delta, big_lambda, cfmm) in zip(self.big_delta, self.big_lambda, self.cfmms):
-                #print("from router.mpc")
-                #print(type(v))
-                #print(type(v[cfmm.Ai]))
                 tmp_big_delta = Matrix(len(big_delta), 1, sfix)
                 tmp_big_lambda = Matrix(len(big_lambda), 1, sfix)
-                #print(type(tmp_big_lambda))
-                #print(type(v.get_vector_by_indices(*cfmm.Ai)))
                 accumulator += (tmp_big_lambda.dot(v.get_vector_by_indices(*cfmm.Ai)) - tmp_big_delta.dot(v.get_vector_by_indices(*cfmm.Ai)))
 
             return self.linearnn_objective.conjugate(v)[:] + accumulator
 
         def g(v):
             G = Matrix(len(self.v), 1, sfix) 
-            #G = sfix.Array(2)
 
             tmp = Matrix(len(self.v), 1, sfix)
-            #tmp = []
             @for_range_opt(len(self.v))
             def _(i):
                 tmp[i].assign(((v[i][0] <= self.v[i][0]).if_else(0, 1)))
@@ -96,19 +78,9 @@ class ArbitrageRouter:
                 self.find_arb(v)
                 self.v.assign(v)
 
-            """
-            if not all(tmp):
-                self.find_arb(v)
-                self.v.assign(v)
-            """
-
             G.assign(self.linearnn_objective.grad(v))
-            #print("from router.mpc")
-            #print(type(G))
 
             for big_delta, big_lambda, c in zip(self.big_delta, self.big_lambda, self.cfmms):
-                #print("from router.mpc")
-                #print(type(c.Ai))
                 tmp2 = G.get_slice_vector(c.Ai) 
                 tmp2 += (big_lambda - big_delta)
                 G.assign(tmp2)
@@ -118,10 +90,7 @@ class ArbitrageRouter:
 
         self.find_arb(self.v)
         new_price_vector = optimizer.optimize(self.v, fn, g, n_iter=2)[0]
-        #print_ln("router.v: %s", new_price_vector.reveal())
         self.v.assign(new_price_vector)
-        #print("from router.route")
-        #print(type(self.v))
         self.find_arb(self.v)
 
 
@@ -130,6 +99,4 @@ class ArbitrageRouter:
         for (big_delta, big_lambda, cfmm) in zip(self.big_delta, self.big_lambda, self.cfmms):
             tmp = big_lambda - big_delta
             psi.assign_vector_by_indices(tmp, *cfmm.Ai)
-            #for i in cfmm.Ai:
-            #    psi[i] = tmp[i]
         return psi
